@@ -11,14 +11,24 @@ import UIKit
 class ViewController: UIViewController {
     let url = URL(string:"http://runeberg.org/words/ss100.txt")!
     var textToDisplay = ""
+    var lines : [String] = []
     
     override func viewWillAppear(_ animated: Bool) {
+        NotificationCenter.default.addObserver(self, selector: #selector(downloadComplete(_:)), name: Notification.Name(rawValue: "downloadComplete"), object: nil)
         downloadTextFile(url: url)
     }
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
+    @objc func downloadComplete(_ notification: Notification) {
+         lines = textToDisplay.components(separatedBy: "\n")
+        print(lines.count)
+        self.performSegue(withIdentifier: "search", sender: self)
+    }
     
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if (segue.identifier == "search") {
+            let vc = segue.destination as! SearchViewController
+            vc.words = lines
+        }
     }
     
     func downloadTextFile(url: URL) {
@@ -30,7 +40,8 @@ class ViewController: UIViewController {
                 let textFile = String(decoding: data!, as: UTF8.self)
                 // Bug: Can't encode to isoLatin1 so no ÅÄÖ right now
                 self.textToDisplay = textFile
-                print(self.textToDisplay)
+                // Will be Changed to make it working async
+                NotificationCenter.default.post(name: Notification.Name(rawValue: "downloadComplete"), object: nil)
             }
         }
         task.resume()
